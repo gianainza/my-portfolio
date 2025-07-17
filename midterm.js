@@ -1,0 +1,386 @@
+
+const canvas = document.getElementById('treeCanvas');
+const ctx = canvas.getContext('2d');
+const seasonIndicator = document.getElementById('seasonIndicator');
+
+// Set canvas size
+function resizeCanvas() {
+    const width = window.innerWidth * 0.6;
+    const height = window.innerHeight * 0.6;
+    canvas.width = width;
+    canvas.height = height;
+}
+
+resizeCanvas();
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    drawScene();
+});
+
+// Seasonal parameters
+const seasons = {
+    spring: {
+        trunkColor: '#5E2C04',
+        leafColor: '#3A7D3A',
+        bgGradient: ['#87CEEB', '#E0F7FA'],
+        groundColor: '#7CB342',
+        name: 'Spring'
+    },
+    summer: {
+        trunkColor: '#4E2A04',
+        leafColor: '#2E7D32',
+        bgGradient: ['#64B5F6', '#B3E5FC'],
+        groundColor: '#689F38',
+        name: 'Summer'
+    },
+    autumn: {
+        trunkColor: '#6E3C0C',
+        leafColor: '#E65100',
+        bgGradient: ['#42A5F5', '#90CAF9'],
+        groundColor: '#8D6E63',
+        name: 'Autumn'
+    },
+    winter: {
+        trunkColor: '#8B5A2B',
+        leafColor: '#FFFFFF',
+        bgGradient: ['#BBDEFB', '#E1F5FE'],
+        groundColor: '#CFD8DC',
+        name: 'Winter'
+    }
+};
+
+let currentSeason = 'spring';
+let params = { ...seasons.spring };
+
+// Draw the complete scene
+function drawScene() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw sky gradient
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    skyGradient.addColorStop(0, params.bgGradient[0]);
+    skyGradient.addColorStop(1, params.bgGradient[1]);
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw sun/moon
+    drawCelestialBody();
+    
+    // Draw ground (lowered to 80% of canvas height instead of 70%)
+    ctx.fillStyle = params.groundColor;
+    ctx.fillRect(0, canvas.height * 0.8, canvas.width, canvas.height * 0.2);
+    
+    // Draw grass (using leaf color)
+    drawGrass();
+    
+    // Start drawing tree
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height * 0.8); // Adjusted to match new ground level
+    
+    // Set tree parameters
+    const treeParams = {
+        branchLength: canvas.height * 0.2,  // Reduced from 0.3 to 0.25
+        angle: Math.PI / 8,
+        shrinkFactor: 0.7,
+        minBranchLength: 2,
+        branchWidth: 12,
+        widthShrink: 0.7,
+        color: params.trunkColor,
+        leafColor: params.leafColor,
+        leafSize: currentSeason === 'winter' ? 3 : 4,
+        randomness: 0.3,
+        maxDepth: currentSeason === 'winter' ? 8 : 10
+    };
+    
+    // Start the recursion
+    branch(treeParams.branchLength, treeParams.branchWidth, 0, treeParams);
+    
+    ctx.restore();
+    
+    // Add decorative flowers in spring
+    if (currentSeason === 'spring') {
+        drawFlowers();
+    }
+    
+    // Add snowflakes in winter
+    if (currentSeason === 'winter') {
+        drawSnowflakes();
+    }
+}
+
+// Recursive branch function
+function branch(length, width, depth, params) {
+    // Draw the branch
+    ctx.lineWidth = width;
+    ctx.strokeStyle = params.color;
+    ctx.fillStyle = params.color;
+    
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -length);
+    ctx.stroke();
+    
+    // Move to end of branch
+    ctx.translate(0, -length);
+    
+    // Check if we should continue branching
+    if (length > params.minBranchLength && depth < params.maxDepth) {
+        // Calculate new length and width
+        const newLength = length * params.shrinkFactor * (0.9 + Math.random() * 0.2);
+        const newWidth = width * params.widthShrink;
+        
+        // Randomness factor for angles
+        const angleRandomness = (Math.random() - 0.5) * params.randomness;
+        
+        // Left branch
+        ctx.save();
+        ctx.rotate(-params.angle + angleRandomness);
+        branch(newLength, newWidth, depth + 1, params);
+        ctx.restore();
+        
+        // Right branch
+        ctx.save();
+        ctx.rotate(params.angle + angleRandomness);
+        branch(newLength, newWidth, depth + 1, params);
+        ctx.restore();
+        
+        // Occasionally add a third branch
+        if (Math.random() > 0.7 && depth < 5) {
+            ctx.save();
+            ctx.rotate(angleRandomness * 0.5);
+            branch(newLength * 0.8, newWidth * 0.8, depth + 1, params);
+            ctx.restore();
+        }
+    } else {
+        // Draw leaves/flowers/snow at the end of the branch
+        if (currentSeason === 'winter') {
+            drawSnowflake(0, 0, params.leafSize);
+        } else {
+            drawLeaf(params.leafColor, params.leafSize);
+        }
+    }
+}
+
+// Draw a leaf
+function drawLeaf(color, size) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    
+    if (currentSeason === 'autumn') {
+        // Draw maple-style leaf in autumn
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(size, -size*2, size*2, -size, 0, -size*3);
+        ctx.bezierCurveTo(-size*2, -size, -size, -size*2, 0, 0);
+    } else {
+        // Simple oval leaf in other seasons
+        ctx.ellipse(0, 0, size, size*1.5, Math.PI/4, 0, Math.PI*2);
+    }
+    
+    ctx.fill();
+    
+    // Add some details for non-winter seasons
+    if (currentSeason !== 'winter') {
+        ctx.strokeStyle = darkenColor(color, 20);
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    }
+}
+
+// Draw grass at the base (now using leaf color)
+function drawGrass() {
+    ctx.save();
+    ctx.strokeStyle = params.leafColor; // Changed to use leaf color
+    
+    const grassHeight = canvas.height * 0.02;
+    const grassCount = currentSeason === 'winter' ? 30 : 100; // Fewer grass blades in winter
+    
+    for (let i = 0; i < grassCount; i++) {
+        const x = Math.random() * canvas.width;
+        const y = canvas.height * 0.8 + Math.random() * grassHeight;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(
+            x + (Math.random() - 0.5) * 10,
+            y - grassHeight * (0.5 + Math.random()),
+            x + (Math.random() - 0.5) * 5,
+            y - grassHeight * (1 + Math.random())
+        );
+        ctx.stroke();
+    }
+    
+    ctx.restore();
+}
+
+// Draw celestial body (sun/moon)
+function drawCelestialBody() {
+    ctx.save();
+    
+    const isDay = currentSeason !== 'winter';
+    const size = canvas.width * 0.1;
+    const x = canvas.width * 0.8;
+    const y = canvas.height * 0.2;
+    
+    if (isDay) {
+        // Draw sun
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+        gradient.addColorStop(0, '#FFEB3B');
+        gradient.addColorStop(1, 'rgba(255, 235, 59, 0)');
+        ctx.fillStyle = gradient;
+    } else {
+        // Draw moon
+        ctx.fillStyle = '#EEEEEE';
+    }
+    
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+    
+    if (!isDay) {
+        // Add moon craters
+        ctx.fillStyle = '#CCCCCC';
+        for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * size * 0.7;
+            const craterX = x + Math.cos(angle) * distance;
+            const craterY = y + Math.sin(angle) * distance;
+            const craterSize = size * (0.1 + Math.random() * 0.1);
+            
+            ctx.beginPath();
+            ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    ctx.restore();
+}
+
+// Draw decorative flowers in spring
+function drawFlowers() {
+    ctx.save();
+    
+    const flowerCount = 15;
+    const colors = ['#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE'];
+    
+    for (let i = 0; i < flowerCount; i++) {
+        const x = canvas.width * 0.2 + Math.random() * canvas.width * 0.6;
+        const y = canvas.height * 0.8 + Math.random() * canvas.height * 0.05;
+        const size = 3 + Math.random() * 4;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Stem
+        ctx.strokeStyle = '#4CAF50';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - size * 3);
+        ctx.stroke();
+        
+        // Flower
+        ctx.fillStyle = color;
+        for (let j = 0; j < 5; j++) {
+            const angle = (j / 5) * Math.PI * 2;
+            const petalX = x + Math.cos(angle) * size;
+            const petalY = y - size * 3 + Math.sin(angle) * size;
+            
+            ctx.beginPath();
+            ctx.ellipse(petalX, petalY, size, size*0.6, angle, 0, Math.PI*2);
+            ctx.fill();
+        }
+        
+        // Center
+        ctx.fillStyle = '#FFEB3B';
+        ctx.beginPath();
+        ctx.arc(x, y - size * 3, size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    ctx.restore();
+}
+
+// Draw snowflakes in winter
+function drawSnowflakes() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    
+    const flakeCount = 50;
+    
+    for (let i = 0; i < flakeCount; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height * 0.8;
+        const size = 1 + Math.random() * 2;
+        
+        drawSnowflake(x, y, size);
+    }
+    
+    ctx.restore();
+}
+
+function drawSnowflake(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    
+    for (let i = 0; i < 6; i++) {
+        ctx.rotate(Math.PI / 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(size * 2, 0);
+        ctx.lineWidth = size * 0.3;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.stroke();
+        
+        // Add side branches
+        ctx.beginPath();
+        ctx.moveTo(size * 0.5, 0);
+        ctx.lineTo(size * 0.8, size * 0.3);
+        ctx.moveTo(size * 0.5, 0);
+        ctx.lineTo(size * 0.8, -size * 0.3);
+        ctx.stroke();
+    }
+    
+    ctx.restore();
+}
+
+// Helper function to darken a color
+function darkenColor(color, amount) {
+    // Convert hex to RGB
+    let r = parseInt(color.substr(1, 2), 16);
+    let g = parseInt(color.substr(3, 2), 16);
+    let b = parseInt(color.substr(5, 2), 16);
+    
+    // Darken each component
+    r = Math.max(0, r - amount);
+    g = Math.max(0, g - amount);
+    b = Math.max(0, b - amount);
+    
+    // Convert back to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+// Cycle through seasons
+function changeSeason() {
+    const seasonKeys = Object.keys(seasons);
+    const currentIndex = seasonKeys.indexOf(currentSeason);
+    const nextIndex = (currentIndex + 1) % seasonKeys.length;
+    currentSeason = seasonKeys[nextIndex];
+    
+    params = { ...seasons[currentSeason] };
+    seasonIndicator.textContent = params.name;
+    
+    // Adjust parameters based on season
+    if (currentSeason === 'winter') {
+        params.randomness = 0.4; // More random branches in winter
+    } else {
+        params.randomness = 0.3;
+    }
+}
+
+// Initial draw
+drawScene();
+
+// Click to regenerate and change season
+canvas.addEventListener('click', () => {
+    changeSeason();
+    drawScene();
+});

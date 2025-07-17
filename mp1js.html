@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #281E30;}
+        .container-wrapper { display: flex; justify-content: space-around; padding: 20px; }
+        .container { width: 45%; padding: 20px; border: 1px transparent #ccc; border-radius: 10px; box-shadow: 5px 10px #98768E; background-color: #D3B8C5; color: rgb(44, 43, 43); }
+        input { margin: 5px; padding: 5px; }
+        button { padding: 12px; margin-top: 30px; cursor: pointer; border-radius: 5px; border: 1px transparent;}
+        button:hover { background-color: #98768E; color: rgb(240, 230, 230);}
+        .error { color: red; }
+        .examjava {display: flex; flex-wrap: wrap; justify-content: space-around; padding: 5px;}
+        .examjava1 {display: flex; flex-wrap: wrap; justify-content: space-around; padding: 5px; margin-left: 50px;}
+        h4 {text-align: left; margin-top: 10px; margin-left: 10px;}
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            color: #281E30;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #98768E;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .attendance-checklist {
+            text-align: center;
+            margin-left: 20px;
+        }
+        .attendance-checklist label {
+            display: block;
+            margin: 5px 0;
+        }
+        h6 {
+            text-align: center;
+        }
+        /* Highlighted Results */
+        .highlight {
+            font-size: 24px;
+            font-weight: bold;
+            color: #720bc7;
+            background-color: #f0e6f7;
+            padding: 10px;
+            border-radius: 5px;
+            border: 2px solid #720bc7;
+            margin-top: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-wrapper">
+        <div class="container">
+            <h2>Lecture Prelim Grade <span style="color:#720bc7">Calculator</span></h2>
+            <h4>Prelim Exam: </h4>
+            <label>Prelim Exam Score: <input type="number" id="prelimExam" min="0" max="100"></label><br>
+            <h4> Prelim Quizzes: </h4>
+            <div class="examjava">
+            <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Essay: <input type="number" id="essay" min="0" max="100"></label>
+            <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PVM: <input type="number" id="pvm" min="0" max="60"></label>
+            </div>
+            <div class="examjava">
+            <label>Java Basics: <input type="number" id="javaBasics" min="0" max="40"></label>
+            <label>Intro to JS: <input type="number" id="introJS" min="0" max="40"></label>
+            </div>
+            <h4> Attendance: </h4>
+            <h6>Put check on the dates that you have attended the class. Leaving it unchecked will mark as absent.</h6>
+            <div class="attendance-checklist">
+                <label><input type="checkbox" class="attendance" value="JAN 21"> JANUARY 21, 2025</label>
+                <label><input type="checkbox" class="attendance" value="JAN 28"> JANUARY 28, 2025</label>
+                <label><input type="checkbox" class="attendance" value="FEB 04"> FEBUARY 04, 2025</label>
+                <label><input type="checkbox" class="attendance" value="FEB 11"> FEBUARY 11, 2025</label>
+                <label><input type="checkbox" class="attendance" value="FEB 18"> FEBUARY 18, 2025</label>
+            </div>
+            <button onclick="calculateLectureGrade()">Calculate Lecture Grade</button>
+            <span class="tooltip">🛈
+                <span class="tooltip-text">Formula: (0.6 * Exam) + (0.4 * ((0.6 * Quizzes) + (0.4 * Attendance)))</span>
+            </span>
+            <br>
+            <h3 id="lectureResult"></h3> <!-- No highlight class initially -->
+            <p id="lectureError" class="error"></p>
+        </div>
+        
+        <div class="container">
+            <h2>Laboratory Prelim Grade <span style="color:#720bc7">Calculator</span></h2>
+            <h4>Prelim Exams: </h4>
+            <div class="examjava">
+                <label>Java 1: <input type="number" id="java1" min="0" max="100"></label>
+                <label>JS 1: <input type="number" id="java2" min="0" max="100"></label>
+            </div>
+            <div class="examjava">
+            <label>Java 2: <input type="number" id="js1" min="0" max="100"></label>
+            <label>JS 2: <input type="number" id="js2" min="0" max="100"></label>
+            </div>
+            <br>
+            <h4>Lab Works: </h4>
+            <div class="examjava1">
+            <label>MP1: <input type="number" id="mp1" min="0" max="100"></label><br>
+            <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MP2: <input type="number" id="mp2" min="0" max="100"></label><br>
+            </div>
+            <div class="examjava1">
+            <label>MP3: <input type="number" id="mp3" min="0" max="100"></label><br>
+            <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Docu: <input type="number" id="mp3Docu" min="0" max="100"></label><br>
+            </div>
+            <br>
+            <h4>Attendance: </h4>
+            <h6>Put check on the dates that you have attended the class. Leaving it unchecked will mark as absent.</h6>
+            <div class="attendance-checklist">
+                <label><input type="checkbox" class="lab-attendance" value="JAN. 21"> JANUARY 21, 2025</label>
+                <label><input type="checkbox" class="lab-attendance" value="JAN 28"> JANUARY 28, 2025</label>
+                <label><input type="checkbox" class="lab-attendance" value="FEB 04"> FEBUARY 04, 2025</label>
+                <label><input type="checkbox" class="lab-attendance" value="FEB 11"> FEBUARY 11, 2025</label>
+                <label><input type="checkbox" class="lab-attendance" value="FEB 18"> FEBUARY 18, 2025</label>
+            </div>
+            <button onclick="calculateLabGrade()">Calculate Lab Grade</button>
+            <span class="tooltip">🛈
+                <span class="tooltip-text">Formula: (0.6 * Exam) + (0.4 * ((0.6 * Lab Work) + (0.4 * Attendance)))</span>
+            </span>
+            <br>
+            <h3 id="labResult"></h3> <!-- No highlight class initially -->
+            <p id="labError" class="error"></p>
+        </div>
+    </div>
+    
+    <script>
+        function calculateLectureGrade() {
+            let prelimExam = document.getElementById('prelimExam').value;
+            let essay = document.getElementById('essay').value;
+            let pvm = document.getElementById('pvm').value;
+            let javaBasics = document.getElementById('javaBasics').value;
+            let introJS = document.getElementById('introJS').value;
+            
+            // Check if any grade input exceeds the maximum allowed value
+            if (essay > 100 || pvm > 60 || javaBasics > 40 || introJS > 40 || prelimExam > 100) {
+                document.getElementById('lectureError').innerText = "Error: Grades cannot exceed their maximum allowed values.";
+                document.getElementById('lectureResult').innerText = ""; // Clear any previous result
+                return;
+            }
+
+            if (!prelimExam || !essay || !pvm || !javaBasics || !introJS) {
+                document.getElementById('lectureError').innerText = "Please enter all required scores.";
+                return;
+            } else {
+                document.getElementById('lectureError').innerText = "";
+            }
+            
+            prelimExam = parseFloat(prelimExam);
+            essay = parseFloat(essay);
+            pvm = parseFloat(pvm);
+            javaBasics = parseFloat(javaBasics);
+            introJS = parseFloat(introJS);
+            
+            let attendanceCheckboxes = document.querySelectorAll('.attendance');
+            let absences = 0;
+            let atLeastOneChecked = false;
+            attendanceCheckboxes.forEach(checkbox => {
+                if (!checkbox.checked) {
+                    absences++;
+                } else {
+                    atLeastOneChecked = true; // At least one checkbox is checked
+                }
+            });
+            
+            // If absences are 3 or more, automatically fail
+            if (absences >= 3) {
+                document.getElementById('lectureResult').innerText = "Prelim Grade for Lecture: Failed";
+                document.getElementById('lectureResult').classList.add("highlight"); // Add highlight class
+                document.getElementById('lectureError').innerText = "You have exceeded the maximum allowed absences (3).";
+                return;
+            }
+
+            // Error handling: If no checkboxes are checked, display "Failed" message
+            if (!atLeastOneChecked) {
+                document.getElementById('lectureResult').innerText = "Prelim Grade for Lecture: Failed";
+                document.getElementById('lectureResult').classList.add("highlight"); // Add highlight class
+                document.getElementById('lectureError').innerText = "You must attend at least one class.";
+                return;
+            }
+            
+            // Updated formula for prelimQuizzes
+            let prelimQuizzes = ((essay) + (pvm / 60 * 100) + (javaBasics / 40 * 100) + (introJS / 40 * 100)) / 4;
+            let attendance = Math.max(100 - (absences * 10), 0);
+            let prelimClassStanding = (0.6 * prelimQuizzes) + (0.4 * attendance);
+            let prelimGrade = (0.6 * prelimExam) + (0.4 * prelimClassStanding);
+            
+            document.getElementById('lectureResult').innerText = `Lecture Prelim Grade: ${prelimGrade.toFixed(2)}`;
+            document.getElementById('lectureResult').classList.add("highlight"); // Add highlight class
+            document.getElementById('lectureError').innerText = ""; // Clear any previous error
+        }
+        
+        function calculateLabGrade() {
+            let java1 = document.getElementById('java1').value;
+            let java2 = document.getElementById('java2').value;
+            let js1 = document.getElementById('js1').value;
+            let js2 = document.getElementById('js2').value;
+            let mp1 = document.getElementById('mp1').value;
+            let mp2 = document.getElementById('mp2').value;
+            let mp3 = document.getElementById('mp3').value;
+            let mp3Docu = document.getElementById('mp3Docu').value;
+            
+            // Check if any grade input is greater than 100
+            if (java1 > 100 || java2 > 100 || js1 > 100 || js2 > 100 || mp1 > 100 || mp2 > 100 || mp3 > 100 || mp3Docu > 100) {
+                document.getElementById('labError').innerText = "Grades cannot exceed 100.";
+                return;
+            }
+
+            if (!java1 || !java2 || !js1 || !js2 || !mp1 || !mp2 || !mp3 || !mp3Docu) {
+                document.getElementById('labError').innerText = "Please enter all required scores.";
+                return;
+            } else {
+                document.getElementById('labError').innerText = "";
+            }
+            
+            java1 = parseFloat(java1);
+            java2 = parseFloat(java2);
+            js1 = parseFloat(js1);
+            js2 = parseFloat(js2);
+            mp1 = parseFloat(mp1);
+            mp2 = parseFloat(mp2);
+            mp3 = parseFloat(mp3);
+            mp3Docu = parseFloat(mp3Docu);
+            
+            let attendanceCheckboxes = document.querySelectorAll('.lab-attendance');
+            let absences = 0;
+            let atLeastOneChecked = false;
+            attendanceCheckboxes.forEach(checkbox => {
+                if (!checkbox.checked) {
+                    absences++;
+                } else {
+                    atLeastOneChecked = true; // At least one checkbox is checked
+                }
+            });
+            
+            // If absences are 3 or more, automatically fail
+            if (absences >= 3) {
+                document.getElementById('labResult').innerText = "Prelim Grade for Laboratory: Failed";
+                document.getElementById('labResult').classList.add("highlight"); // Add highlight class
+                document.getElementById('labError').innerText = "You have exceeded the maximum allowed absences (3).";
+                return;
+            }
+
+            // Error handling: If no checkboxes are checked, display "Failed" message
+            if (!atLeastOneChecked) {
+                document.getElementById('labResult').innerText = "Prelim Grade for Laboratory: Failed";
+                document.getElementById('labResult').classList.add("highlight"); // Add highlight class
+                document.getElementById('labError').innerText = "You must attend at least one class.";
+                return;
+            }
+            
+            let prelimExam = (0.2 * java1) + (0.3 * java2) + (0.2 * js1) + (0.3 * js2);
+            let labWork = (mp1 + mp2 + mp3 + mp3Docu) / 4;
+            let attendance = Math.max(100 - (absences * 10), 0);
+            let prelimClassStanding = (0.6 * labWork) + (0.4 * attendance);
+            let prelimGrade = (0.6 * prelimExam) + (0.4 * prelimClassStanding);
+            
+            document.getElementById('labResult').innerText = `Lab Prelim Grade: ${prelimGrade.toFixed(2)}`;
+            document.getElementById('labResult').classList.add("highlight"); // Add highlight class
+            document.getElementById('labError').innerText = ""; // Clear any previous error
+        }
+    </script>
+</body>
+</html>
